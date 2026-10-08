@@ -136,23 +136,11 @@ validate_rpm() {
   rpm -qlp "$pkg_path" | grep -q "fish/vendor_completions" || fail "Fish completions not found"
   pass "Fish completions present"
 
-  # Check ripgrep is recommended (weak dependency)
-  local supplements
-  supplements=$(rpm -qp --supplements "$pkg_path" 2>/dev/null || true)
-  local recommends_found=false
-  if echo "$supplements" | grep -q "ripgrep"; then
-    recommends_found=true
-  fi
-  # Fallback: some rpm versions expose recommends via requires
-  if [[ "$recommends_found" != "true" ]]; then
-    local deps
-    deps=$(rpm -qRp "$pkg_path" 2>/dev/null || true)
-    if echo "$deps" | grep -q "ripgrep"; then
-      recommends_found=true
-    fi
-  fi
-  [[ "$recommends_found" == "true" ]] || fail "ripgrep not found in package recommends/requires"
-  pass "ripgrep listed as recommended dependency"
+  # Check ripgrep is a recommended (weak) dependency
+  local rpm_recommends
+  rpm_recommends=$(rpm -qp --recommends "$pkg_path" 2>/dev/null || true)
+  echo "$rpm_recommends" | grep -q "ripgrep" || fail "ripgrep not in RPM Recommends (got: $rpm_recommends)"
+  pass "ripgrep listed in Recommends"
 
   # Check architecture
   local arch
